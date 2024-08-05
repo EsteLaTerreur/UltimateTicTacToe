@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Canva random</title>
+    <style>
+        body {
+            background-color: #FFF1F1;
+            text-align: center;
+        }
+        .bouton_perso{
+            height: 50px;
+            width: 300px;
+            font-size: 20px;
+            background-color: #e74f4f;
+        }
+        .container_score{
+            position: relative;
+            border: 3px solid #e74797;
+            width: 400px; 
+            height: 300px;
+            display: inline-block;
+            padding: 20px;
+            overflow-y: auto; 
+            align-items: center;
+            margin-top: 20px;
+            margin-left: 20px;
+        }
+        .text_score{
+            font-size: 25px;
+            font-weight: bold;
+        }
+        .score_container{
+            border: 3px solid #9c5378;
+            display: inline-block;
+            padding: 20px;
+            overflow-y: auto; 
+            align-items: center;
+            width: 30;
+            height: 30;
+        }
+    </style>
+</head>
+<body>
+    <h1>
+        <p id="titredelapage">Bienvenue sur Ultimate Tic Tac Toe !</p>
+    </h1>
+        
+    <a href="pageDuJeu.html"><button id="monBouton" class="bouton_perso">Lancer une partie</button></a>
+    <br>
+    <br>
+    <div class="container_score">
+        <div class = 'text_score'>
+            <p>Classement du nombre de victoires :</p>
+        </div>
+        <div id="score-container0" class="score-container">
+            <ul id="scores">
+                <!-- liste score -->
+            </ul>
+        </div>
+    </div>
+    <br>
+    <a href="https://en.wikipedia.org/wiki/Ultimate_tic-tac-toe">Règles du jeu</a>
+    <script src="/socket.io/socket.io.js"></script>
+    <script>
+        window.onload = function() {
+                    afficheScore();
+                }
+        var socket = io();
+        function afficheScore(){
+            socket.emit('demande_score');
+        }
+        socket.on('envoi_score', function(data) {
+            const scores = document.getElementById('scores');
+            const item = document.createElement('li');
+            scores.innerHTML = '';
+            liste_users = data.liste_users;
+            liste_scores = data.liste_scores;
+            for(let i=0;i<liste_scores.length;i++){
+                data = liste_users[i] + ' : '+ liste_scores[i];
+                data.split('\n').forEach(line => {
+                    const lineElement = document.createElement('p');
+                    lineElement.textContent = line;
+                    item.appendChild(lineElement);
+                });
+                scores.appendChild(item);
+                scores.appendChild(document.createElement('br'));
+            }
+        });
+
+    </script>
+</body>
+</html>

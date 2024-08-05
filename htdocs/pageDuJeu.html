@@ -1,0 +1,612 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Ultimate Tic Tac Toe</title>
+    <style>
+        body {
+            background-color: #FFF1F1;
+            text-align: center;
+        }
+        .container_score_canva_chat{
+            display: flex;
+            justify-content: center;
+            height: 95%;
+            width: 99%;
+            margin-left: 10px;
+            margin-right: 10px;
+            border: 3px solid #e74f4f;
+        }
+        .container_canva_text {
+            border: 3px solid #e74f4f;
+            padding: 20px;
+            align-items: center;
+            display: inline-block;
+            margin-bottom: 20px;
+            margin-top: 20px;
+            margin-left: 20px;
+            text-align : center
+        }
+        .container_score{
+            position: relative;
+            border: 3px solid #e74797;
+            width: 400px; 
+            height: 300px;
+            display: inline-block;
+            padding: 20px;
+            overflow-y: auto; 
+            align-items: center;
+            margin-top: 20px;
+            margin-left: 20px;
+        }
+        .text_score{
+            font-size: 25px;
+            font-weight: bold;
+        }
+        .score_container{
+            border: 3px solid #9c5378;
+            display: inline-block;
+            padding: 20px;
+            overflow-y: auto; 
+            align-items: center;
+            width: 30;
+            height: 30;
+        }
+        .text-container {
+            margin-right: 20px;
+            margin-left: 20px;
+            margin-top: 20px;
+            margin-bottom: 20px;
+            display: inline-block;
+            font-size: 20;
+        }
+        .bouton_perso{
+            height: 50px;
+            width: 250px;
+            font-size: 20px;
+            background-color: #e74f4f;
+        }
+        .canva_container {
+            margin-right: 20px;
+        }
+        .container_chat {
+            position: relative;
+            border: 3px solid #e74797;
+            width: 400px; 
+            height: 300px;
+            display: inline-block;
+            padding: 20px;
+            overflow-y: auto; 
+            align-items: center;
+            margin-top: 20px;
+            margin-left: 20px;
+        }
+        .container_messages{
+            border: 3px solid #9c5378;
+            display: inline-block;
+            padding: 20px;
+            overflow-y: auto; 
+            width: 358px;
+            height: 200px;
+        }
+        .message_info{
+            font-size: 20px;
+        }
+        #messages {
+            list-style-type: none; 
+            padding: 0; 
+            margin: 0; 
+        }
+        #messages li{
+            display: inline-block;
+        }
+        #messages li::before {
+            margin-bottom: 5px; 
+            margin-right: 5px;
+        }
+        .container_entree_chat {
+            width: 100%; 
+            padding: 10px; 
+            background-color: #f9f9f9; 
+            border-top: 1px solid #ccc; 
+            position: absolute;
+            bottom: 0;
+        }
+        #entree {
+            width: calc(100% - 80px); 
+            padding: 5px; 
+            margin-right: 5px; 
+        }
+        #entree[type="submit"] {
+            width: 70px; 
+            padding: 5px; 
+        }
+        
+        input[type="text"],
+        textarea {
+            background-color: #FFE9E9;
+            padding: 8px;
+            font-size: 12px; 
+        }
+
+
+    </style>
+</head>
+<body>
+    <h1>
+        <p id="titredelapage">Ultimate Tic Tac Toe</p>
+    </h1>
+    <input id="entree_nom" type="text" autocomplete="off" placeholder="Entrez votre nom" />
+    <button id = 'bouton_nom'>Envoyer</button>
+    <div id = 'affiche_nom'></div>
+    <br>
+    <div class = "container_score_canva_chat">
+        <div class="container_score">
+            <div class = 'text_score'>
+                <p>Classement du nombre de victoires :</p>
+            </div>
+            <div id="score-container0" class="score-container">
+                <ul id="scores" class ="custom-list">
+                    <!-- liste score -->
+                </ul>
+            </div>
+        </div>
+        <div class="container_canva_text">
+            <div class="canva_container">
+                <canvas id = "canvas1" height = "500" width = "500" style="border:1px solid #000;"></canvas> 
+            </div>
+            <br>
+            <div class="text-container">
+                <div id ="message_info" class="message_info">Veillez à ce que les 2 joueurs aient défini leur nom avant de jouer.</div>
+            </div>
+        </div>
+
+        <div class="container_chat">
+            <div id="chat-container" class="container_messages">
+                <ul id="messages">
+                    <!-- liste messages -->
+                </ul>
+            </div>
+        
+            <div id="container_entree_chat">
+                <form id="form" action="">
+                    <input id="entree" type="text" autocomplete="off" placeholder="Envoyer un message" />
+                    <input type="submit" value="Envoyer" />
+                </form>
+            </div>
+        </div>
+    </div>
+    <br>
+    <a href="index.html"><button id="boutonAccueil" class="bouton_perso">Retour accueil</button></a>
+    <button id="reloadButton" class="bouton_perso">Recommencer la partie</button>
+
+    <script src="/socket.io/socket.io.js"></script>
+    <script>
+        
+        const form = document.getElementById('form');
+        var socket = io();
+        var nomUser ;
+        window.onload = function() {
+            console.log("Chargement fenêtre");
+            update_cases();
+            drawBoard();
+            drawGrid();
+            afficheScore();
+        }
+        // enregistre nom au début de la partie
+        var nameInput = document.getElementById('entree_nom');
+        var bouton_nom = document.getElementById('bouton_nom');
+        nameInput.addEventListener('keypress', function(event) {
+            if (event.key === 'Enter') {
+                enregistreNom(nameInput.value);
+                nameInput.value = "";
+            }
+        });
+
+        bouton_nom.addEventListener('click', function() {
+            enregistreNom(nameInput.value);
+            nameInput.value = "";
+        });
+
+        function enregistreNom(nom){
+            nomUser = nom;
+            document.getElementById('entree_nom').disabled = true;
+            document.getElementById('bouton_nom').disabled = true;
+            document.getElementById('affiche_nom').innerHTML = 'Votre nom est : '+nom;
+            // envoie du nom au serveur
+            socket.emit('enregistre_nom', { name : nomUser} );
+        };
+
+        // envoie msg dans le chat
+        form.addEventListener('submit', function(e) {
+            e.preventDefault(); // empêcher le rechargement de la page
+            var message = document.getElementById('entree').value;
+            socket.emit('chat message', { msg : message, user : nomUser} );
+            document.getElementById('entree').value = ''; // vider le champ de saisie après l'envoi
+        });
+
+        // récup msg et l'affiche
+        socket.on('chat message', function(data) {
+            const messages = document.getElementById('messages');
+            const item = document.createElement('li');
+            data =data.sender + ' : '+ data.message;
+            // création de balise pour chaque msg
+            data.split('\n').forEach(line => {
+                const lineElement = document.createElement('p');
+                lineElement.textContent = line;
+                item.appendChild(lineElement);
+            });
+            messages.appendChild(item);
+            messages.appendChild(document.createElement('br'));
+            messages.parentElement.scrollTop = messages.parentElement.scrollHeight;
+        });
+        socket.on('message_nom_erreur', function(data) {
+            document.getElementById('message_info').innerHTML = data.msg;
+        });
+
+        function afficheScore(){
+            socket.emit('demande_score');
+        }
+
+        socket.on('envoi_score', function(data) {
+            var scores = document.getElementById('scores');
+            const item = document.createElement('li');
+            liste_users = data.liste_users;
+            liste_scores = data.liste_scores;
+            scores.innerHTML = '';
+            for(let i=0;i<liste_scores.length;i++){
+                data = liste_users[i] + ' : '+ liste_scores[i];
+                data.split('\n').forEach(line => {
+                    const lineElement = document.createElement('p');
+                    lineElement.textContent = line;
+                    item.appendChild(lineElement);
+                });
+                scores.appendChild(item);
+                scores.appendChild(document.createElement('br'));
+            }
+        });
+
+        // GESTION DU JEU
+        
+        var grille = []
+        canvas = document.querySelector("#canvas1")
+        ctx = canvas.getContext('2d')
+        for (var i = 0; i < 9; i++) {
+            for (var j = 0; j<9; j++){
+                grille.push({
+                x: i*canvas.width/9,
+                y: j*canvas.height/9,
+                width: canvas.width/9, 
+                height: canvas.height/9 
+                });
+            }
+        }
+        var casecliquee = grille[0];
+        var carreclique = 0;
+        var joueur = 0;
+        var carre_a_jouer=4 ;
+        var premierClick = true;
+        var occupied = new Array(81).fill('');
+        var gagne = new Array(9).fill("");
+
+        // dessin du board
+        function drawBoard() {
+            ctx.strokeStyle = '#000'; 
+            ctx.lineWidth = 3; 
+            
+            for (var i = 0; i <= 3; i++) {
+                ctx.beginPath();
+                ctx.moveTo(i * (canvas.width / 3), 0);
+                ctx.lineTo(i * (canvas.width / 3), canvas.height);
+                ctx.stroke();
+                
+                ctx.beginPath();
+                ctx.moveTo(0, i * (canvas.height / 3));
+                ctx.lineTo(canvas.width, i * (canvas.height / 3));
+                ctx.stroke();
+            }
+
+            ctx.lineWidth = 1; 
+        }
+
+        // dessin des cases
+        function drawGrid() {
+            ctx.strokeStyle = 'grey'; 
+            for (var i = 0; i < 9*9; i++) {
+                var cases = grille[i];
+                ctx.strokeRect(cases.x, cases.y, cases.width, cases.height);
+            }
+        }
+
+        // pour dessiner au milieu des cases 
+        function center_point (c){
+            cases = grille[c];
+            var centerX = cases.x + cases.width/2;
+            var centerY = cases.y + cases.height/2;
+            return {x : centerX, y :centerY};
+        }
+
+        // dessine un petit rond bleu
+        function draw_round(cases){  
+            occupied[cases] = 'r';
+            x = center_point(cases).x;
+            y =  center_point(cases).y;
+            ctx.strokeStyle = 'blue'; 
+            ctx.beginPath();
+            ctx.arc(x, y, 20, 0, Math.PI * 2);
+            ctx.lineWidth = 6;
+            ctx.stroke();
+        }
+
+        // dessin un grand rond bleu
+        function draw_big_round(carre){
+            x = center_point(get_num_case(4,carre)).x;
+            y =  center_point(get_num_case(4,carre)).y;
+            ctx.strokeStyle = 'blue'; 
+            ctx.beginPath();
+            ctx.arc(x, y, 60, 0, Math.PI * 2);
+            ctx.lineWidth = 20;
+            ctx.stroke();
+
+        }
+
+        // dessine une petite croix rouge
+        function draw_cross(cases){
+            occupied[cases] = 'c';
+            x = center_point(cases).x;
+            y = center_point(cases).y;
+            ctx.strokeStyle = 'red'; 
+            ctx.lineWidth = 4; 
+            
+            ctx.beginPath();
+            ctx.moveTo(x - 20, y - 20); 
+            ctx.lineTo(x + 20, y + 20); 
+            ctx.stroke();
+            
+            ctx.beginPath();
+            ctx.moveTo(x + 20, y - 20); 
+            ctx.lineTo(x - 20, y + 20); 
+            ctx.stroke();
+        }
+
+        // dessine une grande croix rouge
+        function draw_big_cross(carre){
+            
+            // console.log("La case 4 du carre "+ carre+ "est "+get_num_case(4,carre));
+            x = center_point(get_num_case(4,carre)).x;
+            y =  center_point(get_num_case(4,carre)).y;
+            ctx.strokeStyle = 'red'; 
+            ctx.lineWidth = 20; 
+            
+            ctx.beginPath();
+            ctx.moveTo(x - 60, y - 60); 
+            ctx.lineTo(x + 60, y + 60); 
+            ctx.stroke();
+            
+            ctx.beginPath();
+            ctx.moveTo(x + 60, y - 60); 
+            ctx.lineTo(x - 60, y + 60); 
+            ctx.stroke();
+        }
+
+        function get_ligne(cases){
+            return cases%9
+        }
+
+        function get_colonne(cases){
+            var colonne = Math.floor (cases/9);
+            return colonne
+        }
+
+        function  carre_clique(cases){
+            var ligne = get_ligne(cases);
+            var colonne = get_colonne(cases);
+            return Math.floor(ligne/3)+3*Math.floor(colonne/3);
+        }
+        // trouve le prochain carré correspondant
+        function carre_equiv(cases){
+            var colonne = get_colonne(cases);
+            var ligne = get_ligne(cases) ;
+            var car = (ligne)%3 + 3*Math.floor((colonne)%3);
+            return car;
+        }
+
+        function case_equiv(cases){
+            return Math.floor(get_ligne(cases)%3+3*Math.floor(get_colonne(cases)%3));
+        }
+
+        // gestion de la requête "clic sur une case"
+        function update_cases(){
+            if (gagne[carre_a_jouer]!=""||premierClick){
+                for (i=0;i<81;i++){
+                    ctx.clearRect(grille[i].x , grille[i].y , grille[i].width , grille[i].height);
+                    if (gagne[carre_clique(i)]==""){
+                        ctx.fillStyle = 'rgba(255, 255, 0, 0.2)';
+                        ctx.fillRect(grille[i].x , grille[i].y , grille[i].width , grille[i].height);
+                    }
+                    if (occupied[i]=='r'){
+                    draw_round(i);
+                    }
+                    else if(occupied[i]=='c'){
+                        draw_cross(i);
+                    }
+                }
+            }
+            else{
+                for (i=0;i<81;i++){
+                    ctx.clearRect(grille[i].x , grille[i].y , grille[i].width , grille[i].height);
+                    if (carre_clique(i)==carre_a_jouer){
+                        ctx.fillStyle = 'rgba(255, 255, 0, 0.2)';
+                        ctx.fillRect(grille[i].x , grille[i].y , grille[i].width , grille[i].height);
+                    }
+                    if (occupied[i]=='r'){
+                        draw_round(i);
+                    }
+                    else if(occupied[i]=='c'){
+                        draw_cross(i);
+                    }
+                }
+            }
+            for (i=0;i<9;i++){
+                if (gagne[i]=='r'){
+                    console.log('draw big round')
+                    draw_big_round(i);
+                    ctx.fillStyle = 'rgba(0, 0, 255, 0.1)';
+                    var t = (3*Math.floor(i%3)+27*Math.floor(i/3));
+                    ctx.fillRect(grille[t].x , grille[t].y , grille[t].width*3 , grille[t].height*3);
+                }
+                else if(gagne[i]=='c'){
+                    console.log('draw big cross')
+                    draw_big_cross(i);
+                    ctx.fillStyle = 'rgba(255, 0, 0, 0.1)';
+                    var t = (3*Math.floor(i%3)+27*Math.floor(i/3));
+                    ctx.fillRect(grille[t].x , grille[t].y , grille[t].width*3 , grille[t].height*3);
+                }
+            }
+            drawBoard();
+            drawGrid();
+        }
+        
+
+        function get_num_case(case_equiv, carre ){
+            var ligne = case_equiv%3;
+            var colonne = Math.floor(case_equiv/3);
+            var c = ligne + 3*(carre%3)+9*colonne+27*Math.floor(carre/3);
+            return c;
+        }
+
+        var conditions_victoire = [[0,1,2],[3,4,5],[6,7,8],[0,3,6],[1,4,7],[2,5,8],[0,4,8],[2,4,6]];//lignes, colonnes et diagonales qui donnent la victoire
+
+        function victoire_carre(carre){ 
+            var vic = Array.from({ length: 8 }, () => ['', '', '']);
+            for(i=0;i<8;i++){
+                for (j=0;j<3;j++){
+                    vic[i][j]=occupied[get_num_case(conditions_victoire[i][j],carre)];
+                }
+            }
+            for (i=0;i<8;i++){
+                if (vic[i].every(element => element === 'r')){
+                    gagne[carre] = 'r';
+                    console.log("Le carré "+carre+" a été gagné par les ronds");
+                    document.getElementById('message_info').innerHTML = "Le carré "+carre+" a été gagné par les ronds.";
+                }
+                else if (vic[i].every(element => element === 'c')){
+                    gagne[carre] = 'c';
+                    console.log("Le carré "+carre+" a été gagné par les croix");
+                    document.getElementById('message_info').innerHTML = "Le carré "+carre+" a été gagné par les croix.";
+                }
+            }
+            update_cases();
+        }
+        
+        var partieGagnee = false;
+        function victoire(){
+            var vic = Array.from({ length: 8 }, () => ['', '', '']);
+            // va regrouper toutes les combinaisons de victoire des grands carrés
+            for(i=0;i<8;i++){
+                for (j=0;j<3;j++){
+                    vic[i][j]=gagne[conditions_victoire[i][j]];
+
+                }
+            }
+            for (i=0;i<8;i++){
+                if (vic[i].every(element => element === 'r')){
+                    console.log("Les ronds ont gagné !!!!!!!");
+                    partieGagnee = true;
+                    socket.emit('msg victoire', { msg : 'Les ronds ont gagné !'})
+                    socket.emit('actualise_score',{partieGagnee : partieGagnee,joueur:nomUser});
+                    socket.on('message victoire',(data)=>{
+                        document.getElementById('message_info').innerHTML = data.msg;
+                    })
+                }
+                else if (vic[i].every(element => element === 'c')){
+                    console.log("Les croix ont gagné !!!!!!!");
+                    partieGagnee = true;
+                    socket.emit('msg victoire', { msg : 'Les croix ont gagné !'})
+                    socket.emit('actualise_score',{partieGagnee : partieGagnee,joueur:nomUser});
+                    socket.on('msg victoire',(data)=>{
+                        document.getElementById('message_info').innerHTML = data.msg;
+                    })
+                }
+            }
+        }
+
+        // gestion du clic
+        function handleClick(event) {
+            var rect = canvas.getBoundingClientRect();
+            var x = event.clientX - rect.left;
+            var y = event.clientY - rect.top;
+            //var win = victoire();
+
+            // console.log("Coordonnées du clic : x=" + x + ", y=" + y);
+
+            // on détermine la case concernée
+            for (var i = 0; i < grille.length; i++) {
+                var cases = grille[i];
+                if (x >= cases.x && x <= cases.x + cases.width &&
+                    y >= cases.y && y <= cases.y + cases.height) {
+                        casecliquee = i;
+                    //console.log("Clic dans la case " + i);
+                    // console.log("clic dans case équivalente" + case_equiv(i));
+                    break;
+                }
+            }
+
+            // on détermine le carré où on a cliqué
+            
+            var carreclique = carre_clique(casecliquee);
+            // console.log("dans les carré : "+carreclique);
+            if(!partieGagnee){
+                if (carreclique == carre_a_jouer || gagne[carre_a_jouer] !== ''|| premierClick){
+                    document.getElementById('message_info').innerHTML = "-";
+                    if(gagne[carre_a_jouer]!=='' && gagne[carreclique]!==''){
+                        document.getElementById('message_info').innerHTML = "Jouez dans le carré de votre choix, qui n'est pas déjà gagné.";
+                        // console.log("Jouez dans le carré de votre choix, qui n'est pas déjà gagné.");
+                    }
+                    else if (occupied[casecliquee]==''){
+                        // on envoie une requête pour être sûr que c'est à la bonne personne de jouer
+                        socket.emit('à qui le tour ?', { user : nomUser, case : casecliquee });
+                    }
+                    else{
+                        document.getElementById('message_info').innerHTML = "La case est déjà occupée.";
+                        console.log("La case est déjà occupée.");
+                    }
+                }
+                else{
+                    document.getElementById('message_info').innerHTML = "Vous devez jouer dans le carré jaune.";
+                    console.log("vous devez jouer dans le carré "+carre_a_jouer);
+                }
+            }
+        }
+
+        socket.on('updatePlateau', function(data) {
+            premierClick = false;
+            if(data.symbole == "croix"){
+                draw_cross(data.case)
+            } else {
+                draw_round(data.case)
+            }
+            carre_a_jouer = carre_equiv(data.case);
+            carreclique = carre_clique(data.case);
+            victoire_carre(carreclique);
+            update_cases();
+            victoire();
+        });
+
+        canvas.addEventListener('click', handleClick);
+    
+        document.getElementById("reloadButton").addEventListener("click", function() {
+            socket.emit('reload');
+        });
+        socket.on('reload',(data)=>{
+            location.reload(); 
+            partieGagnee = false;
+            premierClick = true;
+        })
+        socket.on('2_noms_pareils', function(data) {
+            document.getElementById('entree_nom').disabled = false;
+            document.getElementById('bouton_nom').disabled = false;
+            document.getElementById('affiche_nom').innerHTML = data.msg;
+        });
+    </script>
+</body>
+</html>
